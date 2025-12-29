@@ -1,13 +1,5 @@
 // ============================================================
-// 🛡️ ROBLOX SCRIPT PROTECTOR - MAIN SERVER v1.3.0
-// ============================================================
-// Features:
-// - Key System + HWID Lock + Expiry
-// - Anti-Tamper + Obfuscation
-// - Admin Detection (10s scan - memory optimized)
-// - Browser Protection (Unauthorized HTML)
-// - Heartbeat System (30s)
-// - Universal Executor Support (PC & Mobile)
+// 🛡️ ROBLOX SCRIPT PROTECTOR - MAIN SERVER v1.3.1 FIXED
 // ============================================================
 
 const express = require('express');
@@ -23,7 +15,7 @@ const { db, scriptCache } = require('./database');
 const app = express();
 
 // ============================================================
-// 🌐 UNAUTHORIZED HTML PAGE (Browser Protection)
+// 🌐 UNAUTHORIZED HTML PAGE - EXACT COPY (DO NOT MODIFY)
 // ============================================================
 
 const UNAUTHORIZED_HTML = `<!DOCTYPE html>
@@ -170,102 +162,25 @@ function generateRandomVar(len = 8) {
 }
 
 // ============================================================
-// 🔍 BROWSER DETECTION - Universal Executor Support
+// 🔍 BROWSER DETECTION - FIXED VERSION
 // ============================================================
 
 function isBrowserRequest(req) {
-    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
     const acceptHeader = req.headers['accept'] || '';
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
     
-    // ========================================================
-    // EXECUTOR PATTERNS - All supported executors
-    // ========================================================
-    const executorPatterns = [
-        // PC Executors
-        'synapse', 'synapsex', 'synapse x',
-        'scriptware', 'script-ware', 'script ware',
-        'krnl',
-        'fluxus',
-        'jjsploit', 'jj sploit',
-        'oxygen', 'oxygenu', 'oxygen u',
-        'electron',
-        'cefsharp',
-        'evon',
-        'trigon', 'trigon evo',
-        'solara',
-        'wave',
-        'comet',
-        'sirhurt', 'sir hurt',
-        'temple',
-        'aspect',
-        'valyse',
-        'celery',
+    // If request accepts text/html as primary, it's likely a browser
+    if (acceptHeader.includes('text/html')) {
+        // Double check it's not an executor pretending
+        const executorKeywords = ['roblox', 'synapse', 'krnl', 'fluxus', 'delta', 'executor'];
+        const hasExecutorKeyword = executorKeywords.some(keyword => userAgent.includes(keyword));
         
-        // Mobile Executors (Android/iOS)
-        'delta', 'deltax', 'delta x',
-        'arceus', 'arceusx', 'arceus x',
-        'hydrogen',
-        'codex',
-        'vegax', 'vega x',
-        'nihon',
-        'fluxus android',
-        'zorara',
-        'cryptic',
-        'hoho hub',
-        'mobile',
-        
-        // Roblox Related
-        'roblox',
-        'robloxapp',
-        'roblox studio',
-        
-        // Generic executor indicators
-        'executor',
-        'exploit',
-        'inject',
-        'cheat',
-        'httpservice'
-    ];
+        if (!hasExecutorKeyword) {
+            return true; // It's a browser
+        }
+    }
     
-    // Check if user agent matches any executor
-    const isExecutor = executorPatterns.some(pattern => userAgent.includes(pattern));
-    if (isExecutor) return false;
-    
-    // Empty or very short user agent (likely executor with no UA)
-    if (!userAgent || userAgent.length < 10) return false;
-    
-    // Some executors send specific headers
-    const executorHeaders = [
-        'x-executor',
-        'x-exploit', 
-        'x-delta',
-        'x-synapse',
-        'x-fluxus',
-        'x-script',
-        'x-roblox'
-    ];
-    
-    const hasExecutorHeader = executorHeaders.some(h => req.headers[h]);
-    if (hasExecutorHeader) return false;
-    
-    // Check for browser patterns
-    const browserPatterns = [
-        'mozilla/',
-        'chrome/',
-        'safari/',
-        'firefox/',
-        'edge/',
-        'opera/',
-        'msie',
-        'trident/',
-        'webkit'
-    ];
-    
-    const isBrowserUA = browserPatterns.some(pattern => userAgent.includes(pattern));
-    const acceptsHTML = acceptHeader.includes('text/html');
-    
-    // Only block if BOTH: has browser UA AND accepts HTML
-    return isBrowserUA && acceptsHTML;
+    return false; // It's an executor or API call
 }
 
 // ============================================================
@@ -346,8 +261,7 @@ local _success_, _result_ = pcall(${mainFunc})
 }
 
 // ============================================================
-// 👑 ADMIN DETECTION CODE - Universal Executor Support
-// Memory Optimized (10s scan interval)
+// 👑 ADMIN DETECTION CODE - UNIVERSAL SUPPORT
 // ============================================================
 
 function generateAdminDetectionCode() {
@@ -376,9 +290,7 @@ function generateAdminDetectionCode() {
 
     return `
 -- ============================================================
--- 👑 ADMIN DETECTION SYSTEM
--- Universal Executor Support (PC & Mobile)
--- Memory Optimized (10s scan interval)
+-- 👑 ADMIN DETECTION SYSTEM (10s scan interval)
 -- ============================================================
 
 local ${v.isDestroyed} = false
@@ -387,19 +299,16 @@ local ${v.localPlayer} = ${v.players}.LocalPlayer
 local ${v.connection} = nil
 local ${v.scanInterval} = 10
 
--- Safe wait function (works on all executors: Delta, Arceus, Synapse, etc.)
 local ${v.safeWait} = function(t)
     local waitFunc = (task and task.wait) or wait
     return waitFunc(t)
 end
 
--- Safe spawn function (works on all executors)
 local ${v.safeSpawn} = function(f)
     local spawnFunc = (task and task.spawn) or spawn
     return spawnFunc(f)
 end
 
--- Safe garbage collection (some executors don't have this)
 local ${v.safeGC} = function()
     pcall(function()
         if collectgarbage then
@@ -408,18 +317,13 @@ local ${v.safeGC} = function()
     end)
 end
 
--- Admin User IDs
 local ${v.adminIds} = {${adminUserIds.length > 0 ? adminUserIds.map(id => `[${id}]=true`).join(',') : '[0]=false'}}
-
--- Admin Usernames (lowercase)
 local ${v.adminNames} = {${adminUsernames.length > 0 ? adminUsernames.map(name => `["${name.toLowerCase()}"]=true`).join(',') : '["_"]=false'}}
 
--- Destroy Script Function (Silent & Clean)
 local ${v.destroyScript} = function()
     if ${v.isDestroyed} then return end
     ${v.isDestroyed} = true
     
-    -- Disconnect listener
     pcall(function()
         if ${v.connection} then 
             ${v.connection}:Disconnect() 
@@ -427,7 +331,6 @@ local ${v.destroyScript} = function()
         end
     end)
     
-    -- Clear environment
     pcall(function()
         local env = getfenv and getfenv() or {}
         for k, _ in pairs(env) do
@@ -437,16 +340,13 @@ local ${v.destroyScript} = function()
         end
     end)
     
-    -- Garbage collection
     ${v.safeGC}()
     
-    -- Silent infinite yield
     while true do
         ${v.safeWait}(9999)
     end
 end
 
--- Check if player is admin
 local ${v.checkAdmin} = function(player)
     if not player then return false end
     
@@ -464,7 +364,6 @@ local ${v.checkAdmin} = function(player)
     return success and result or false
 end
 
--- Run scan on all players
 local ${v.runScan} = function()
     local success, result = pcall(function()
         for _, p in ipairs(${v.players}:GetPlayers()) do
@@ -475,20 +374,12 @@ local ${v.runScan} = function()
     return success and result or false
 end
 
--- Skip detection if local player is admin (allow admin to use script normally)
 if not ${v.checkAdmin}(${v.localPlayer}) then
-    
-    -- ========================================================
-    -- PRE-EXECUTE CHECK: Scan all current players
-    -- ========================================================
     if ${v.runScan}() then
         ${v.destroyScript}()
         return
     end
     
-    -- ========================================================
-    -- RUNTIME DETECTION: Listen for admin joining
-    -- ========================================================
     pcall(function()
         ${v.connection} = ${v.players}.PlayerAdded:Connect(function(p)
             if ${v.isDestroyed} then return end
@@ -499,9 +390,6 @@ if not ${v.checkAdmin}(${v.localPlayer}) then
         end)
     end)
     
-    -- ========================================================
-    -- PERIODIC SCAN: Every 10 seconds (memory optimized)
-    -- ========================================================
     ${v.safeSpawn}(function()
         while not ${v.isDestroyed} do
             ${v.safeWait}(${v.scanInterval})
@@ -512,20 +400,18 @@ if not ${v.checkAdmin}(${v.localPlayer}) then
                 break
             end
             
-            -- Periodic garbage collection to prevent memory leak
             ${v.safeGC}()
         end
     end)
 end
 
--- Check if destroyed before continuing
 if ${v.isDestroyed} then return end
 
 `;
 }
 
 // ============================================================
-// 🛡️ ANTI-TAMPER CODE - Universal Executor Support
+// 🛡️ ANTI-TAMPER CODE
 // ============================================================
 
 function generateAntiTamperCode(key, hwid, sessionToken) {
@@ -550,16 +436,12 @@ function generateAntiTamperCode(key, hwid, sessionToken) {
     };
 
     const heartbeatCode = config.SECURITY.ENABLE_HEARTBEAT ? `
--- ============================================================
--- 💓 HEARTBEAT SYSTEM (30 second interval)
--- ============================================================
 ${v.ss}(function()
     local fails = 0
     while ${v.p} do
         ${v.sw}(30)
         if not ${v.p} then break end
         
-        -- Collect player data for server-side admin check
         local playerIds = {}
         local playerNames = {}
         
@@ -605,9 +487,8 @@ ${v.ss}(function()
             fails = fails + 1 
         end
         
-        -- Only warn after 5 consecutive failures
         if fails >= 5 then 
-            warn("[Security] Connection issues detected")
+            warn("[Security] Connection issues")
         end
     end
 end)` : '-- Heartbeat disabled';
@@ -615,7 +496,6 @@ end)` : '-- Heartbeat disabled';
     return `
 -- ============================================================
 -- 🛡️ ANTI-TAMPER PROTECTION
--- Universal Executor Support (PC & Mobile)
 -- ============================================================
 
 local ${v.p} = true
@@ -625,23 +505,19 @@ local ${v.vh} = "${hwid}"
 local ${v.su} = "${serverURL}"
 local ${v.ti} = tick()
 
--- Services (with pcall for safety)
 local ${v.hs} = game:GetService("HttpService")
 local ${v.pl} = game:GetService("Players")
 
--- Safe wait (universal - works on Delta, Arceus, Synapse, KRNL, etc.)
 local ${v.sw} = function(t)
     local waitFunc = (task and task.wait) or wait
     return waitFunc(t or 0)
 end
 
--- Safe spawn (universal)
 local ${v.ss} = function(f)
     local spawnFunc = (task and task.spawn) or spawn
     return spawnFunc(f)
 end
 
--- Safe garbage collection
 local ${v.sg} = function()
     pcall(function()
         if collectgarbage then
@@ -650,18 +526,14 @@ local ${v.sg} = function()
     end)
 end
 
--- Environment check (validates core Lua functions)
 local ${v.ce} = function()
-    -- Required functions (must exist on all executors)
     local requiredFuncs = {
         {"pcall", pcall},
         {"type", type},
         {"tostring", tostring},
         {"tonumber", tonumber},
         {"pairs", pairs},
-        {"ipairs", ipairs},
-        {"error", error},
-        {"select", select}
+        {"ipairs", ipairs}
     }
     
     for _, f in ipairs(requiredFuncs) do 
@@ -670,41 +542,22 @@ local ${v.ce} = function()
         end 
     end
     
-    -- Optional functions (some executors may not have these)
-    local optionalFuncs = {
-        {"getfenv", getfenv},
-        {"setfenv", setfenv},
-        {"getmetatable", getmetatable},
-        {"setmetatable", setmetatable},
-        {"rawget", rawget},
-        {"rawset", rawset}
-    }
-    
-    for _, f in ipairs(optionalFuncs) do
-        if f[2] ~= nil and type(f[2]) ~= "function" then
-            return false, "ENV:" .. f[1] .. ":modified"
-        end
-    end
-    
     return true, nil
 end
 
--- Debug detection
 local ${v.cd} = function()
     if debug and type(debug) == "table" then
         if debug.traceback and type(debug.traceback) == "function" then
             local ok, _ = pcall(debug.traceback)
-            if not ok then return false, "DBG:traceback:hooked" end
+            if not ok then return false, "DBG:hook" end
         end
     end
     return true, nil
 end
 
--- Self destruct function
 local ${v.sd} = function(reason)
     ${v.p} = false
     
-    -- Report to server
     pcall(function() 
         ${v.hs}:PostAsync(
             ${v.su}.."/api/report",
@@ -719,15 +572,11 @@ local ${v.sd} = function(reason)
         ) 
     end)
     
-    -- Silent infinite yield
     while true do 
         ${v.sw}(9999) 
     end
 end
 
--- ============================================================
--- INITIAL SECURITY CHECKS
--- ============================================================
 do
     local eOk, eErr = ${v.ce}()
     if not eOk then 
@@ -744,9 +593,6 @@ end
 
 ${heartbeatCode}
 
--- ============================================================
--- CONTINUOUS PROTECTION (15 second check interval)
--- ============================================================
 ${v.ss}(function() 
     while ${v.p} do 
         ${v.sw}(15)
@@ -758,7 +604,6 @@ ${v.ss}(function()
             break 
         end 
         
-        -- Periodic garbage collection
         ${v.sg}()
     end 
 end)
@@ -767,44 +612,37 @@ end)
 }
 
 // ============================================================
-// 🌐 ROUTES - PUBLIC
+// 🌐 ROUTES - ALL ROUTES WITH BROWSER PROTECTION
 // ============================================================
 
-// Root endpoint
+// Root endpoint - FORCE HTML for browsers
 app.get('/', (req, res) => {
+    // Check if browser
     if (isBrowserRequest(req)) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
+        res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+        return;
     }
     
+    // API response for non-browsers
     res.json({
         status: "online",
         name: "Roblox Script Protector",
-        version: "1.3.0",
-        features: [
-            "Key System + HWID Lock",
-            "Anti-Tamper",
-            "Obfuscation",
-            "Heartbeat",
-            "Admin Detection",
-            "Browser Protection",
-            "Universal Executor Support"
-        ]
+        version: "1.3.1",
+        server: "https://toingdc-h4f9.onrender.com"
     });
 });
 
 // Health check
 app.get('/api/health', (req, res) => {
     if (isBrowserRequest(req)) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
+        res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+        return;
     }
     
     res.json({ 
         status: "healthy", 
         timestamp: new Date().toISOString(), 
-        uptime: Math.floor(process.uptime()) + "s",
-        memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) + "MB"
+        uptime: Math.floor(process.uptime()) + "s"
     });
 });
 
@@ -813,11 +651,11 @@ app.get('/api/health', (req, res) => {
 // ============================================================
 
 app.get('/api/script', async (req, res) => {
-    // Browser protection
+    // Block browsers
     if (isBrowserRequest(req)) {
         logAccess(req, 'BROWSER_BLOCKED', false);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
+        res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+        return;
     }
     
     const { key, hwid } = req.query;
@@ -849,21 +687,20 @@ app.get('/api/script', async (req, res) => {
             return res.status(401).type('text/plain').send(`-- Error: ${validation.error}`);
         }
 
-        // Fetch original script (with cache)
+        // Fetch original script
         let originalScript = scriptCache.get('main_script');
         if (!originalScript) {
             console.log(`📥 Fetching script from: ${config.ORIGINAL_SCRIPT_URL}`);
             
             const response = await axios.get(config.ORIGINAL_SCRIPT_URL, { 
                 timeout: 15000, 
-                headers: { 'User-Agent': 'ScriptProtector/1.3.0' },
-                validateStatus: (status) => status === 200
+                headers: { 'User-Agent': 'ScriptProtector/1.3.1' }
             });
             
             originalScript = response.data;
             
             if (typeof originalScript !== 'string' || originalScript.length < 10) {
-                throw new Error('Invalid script response from source');
+                throw new Error('Invalid script response');
             }
             
             scriptCache.set('main_script', originalScript);
@@ -874,42 +711,27 @@ app.get('/api/script', async (req, res) => {
         const sessionToken = generateSessionToken(key, hwid);
         db.createSession(sessionToken, key, hwid);
 
-        // ========================================================
-        // BUILD PROTECTED SCRIPT (Order matters!)
-        // ========================================================
+        // Build protected script
         let finalScript = '';
-        
-        // 1. Admin Detection (FIRST - can stop execution immediately)
         finalScript += generateAdminDetectionCode();
-        
-        // 2. Anti-Tamper (SECOND - validates environment before main script)
         finalScript += generateAntiTamperCode(key, hwid, sessionToken);
-        
-        // 3. Original Script
-        finalScript += '\n-- ============================================================\n';
-        finalScript += '-- MAIN SCRIPT\n';
-        finalScript += '-- ============================================================\n\n';
+        finalScript += '\n-- MAIN SCRIPT\n\n';
         finalScript += originalScript;
-        
-        // 4. Obfuscation (wrap everything)
         finalScript = obfuscateScript(finalScript);
 
         // Log success
         logAccess(req, 'SCRIPT_ACCESS', true, { 
             tier: validation.keyData.tier,
-            session: sessionToken.substring(0, 8) + '...'
+            session: sessionToken.substring(0, 8)
         });
 
         // Send script
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        res.setHeader('Cache-Control', 'no-store, no-cache');
-        res.send(finalScript);
+        res.type('text/plain').send(finalScript);
 
     } catch (error) {
-        console.error('❌ Script Error:', error.message);
-        logAccess(req, 'SCRIPT_ACCESS', false, { error: error.message });
-        res.status(500).type('text/plain').send('-- Error: Failed to load script. Please try again.');
+        console.error('❌ Error:', error.message);
+        logAccess(req, 'SCRIPT_ERROR', false, { error: error.message });
+        res.status(500).type('text/plain').send('-- Error: Failed to load script');
     }
 });
 
@@ -919,15 +741,15 @@ app.get('/api/script', async (req, res) => {
 
 app.post('/api/validate', (req, res) => {
     if (isBrowserRequest(req)) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
+        res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+        return;
     }
     
     const { key, hwid } = req.body;
     const clientIP = getClientIP(req);
 
     if (!key || !hwid) {
-        return res.status(400).json({ valid: false, error: "Missing key or hwid" });
+        return res.status(400).json({ valid: false, error: "Missing params" });
     }
     
     if (db.isBlacklisted(clientIP, hwid)) {
@@ -935,71 +757,18 @@ app.post('/api/validate', (req, res) => {
     }
 
     const validation = validateKey(key, hwid);
-    logAccess(req, 'VALIDATE', validation.valid, { code: validation.code });
+    logAccess(req, 'VALIDATE', validation.valid);
 
     if (validation.valid) {
-        const kd = validation.keyData;
         res.json({ 
             valid: true, 
-            tier: kd.tier,
-            expiry: kd.expiry ? new Date(kd.expiry).toISOString() : null,
-            expiresIn: kd.expiry ? Math.max(0, Math.floor((kd.expiry - Date.now()) / 1000 / 60 / 60 / 24)) + " days" : "lifetime",
-            usage: kd.usageCount 
+            tier: validation.keyData.tier,
+            usage: validation.keyData.usageCount 
         });
     } else {
         db.trackFailedAttempt(clientIP, config.SECURITY.MAX_FAILED_ATTEMPTS);
-        res.status(401).json({ valid: false, error: validation.error, code: validation.code });
+        res.status(401).json({ valid: false, error: validation.error });
     }
-});
-
-// ============================================================
-// 👑 ADMIN CHECK ENDPOINT (Live check from client)
-// ============================================================
-
-app.post('/api/admin-check', (req, res) => {
-    const { playerIds, playerNames } = req.body;
-    
-    if (!config.SECURITY.ENABLE_ADMIN_DETECTION) {
-        return res.json({ hasAdmin: false, enabled: false });
-    }
-    
-    const adminUserIds = config.ADMIN_DETECTION.USER_IDS;
-    const adminUsernames = config.ADMIN_DETECTION.USERNAMES;
-    
-    let hasAdmin = false;
-    let adminInfo = null;
-    
-    // Check by User ID
-    if (playerIds && Array.isArray(playerIds)) {
-        for (const id of playerIds) {
-            if (adminUserIds.includes(String(id))) {
-                hasAdmin = true;
-                adminInfo = { type: 'userId', id };
-                break;
-            }
-        }
-    }
-    
-    // Check by Username
-    if (!hasAdmin && playerNames && Array.isArray(playerNames)) {
-        for (const name of playerNames) {
-            if (adminUsernames.includes(String(name).toLowerCase())) {
-                hasAdmin = true;
-                adminInfo = { type: 'username', name };
-                break;
-            }
-        }
-    }
-    
-    if (hasAdmin) {
-        logAccess(req, 'ADMIN_CHECK_POSITIVE', true, adminInfo);
-    }
-    
-    res.json({ 
-        hasAdmin,
-        action: hasAdmin ? "destroy" : "continue",
-        timestamp: Date.now()
-    });
 });
 
 // ============================================================
@@ -1013,13 +782,11 @@ app.post('/api/heartbeat', (req, res) => {
         return res.status(400).json({ valid: false, error: "Missing params" });
     }
 
-    // Validate session
     const session = db.getSession(token);
     if (!session || session.key !== key || session.hwid !== hwid) {
         return res.json({ valid: false, error: "Invalid session", action: "terminate" });
     }
 
-    // Validate key still valid
     const keyData = db.getKey(key);
     if (!keyData) {
         return res.json({ valid: false, error: "Key not found", action: "terminate" });
@@ -1029,8 +796,8 @@ app.post('/api/heartbeat', (req, res) => {
         return res.json({ valid: false, error: "Key expired", action: "terminate" });
     }
 
-    // Server-side admin detection (double check)
-    if (config.SECURITY.ENABLE_ADMIN_DETECTION) {
+    // Admin detection check
+    if (config.SECURITY.ENABLE_ADMIN_DETECTION && (playerIds || playerNames)) {
         const adminUserIds = config.ADMIN_DETECTION.USER_IDS;
         const adminUsernames = config.ADMIN_DETECTION.USERNAMES;
         
@@ -1045,48 +812,38 @@ app.post('/api/heartbeat', (req, res) => {
         }
         
         if (hasAdmin) {
-            logAccess(req, 'ADMIN_IN_HEARTBEAT', true, { key, hwid });
+            logAccess(req, 'ADMIN_DETECTED', true, { key, hwid });
             return res.json({ valid: false, error: "Admin detected", action: "destroy" });
         }
     }
 
-    // Update heartbeat timestamp
     db.updateSessionHeartbeat(token);
+    console.log(`💓 HB: ${key.substring(0, 12)}... | Uptime: ${Math.round(uptime || 0)}s`);
     
-    const uptimeDisplay = typeof uptime === 'number' ? Math.round(uptime) : 0;
-    console.log(`💓 HB: ${key.substring(0, 12)}... | Uptime: ${uptimeDisplay}s`);
-    
-    res.json({ 
-        valid: true, 
-        serverTime: Date.now(),
-        message: "OK"
-    });
+    res.json({ valid: true, serverTime: Date.now() });
 });
 
 // ============================================================
-// 🚨 SECURITY REPORT ENDPOINT
+// 🚨 REPORT ENDPOINT
 // ============================================================
 
 app.post('/api/report', (req, res) => {
-    const { key, hwid, reason, uptime } = req.body;
+    const { key, hwid, reason } = req.body;
     const clientIP = getClientIP(req);
     
-    console.log(`🚨 Security Report | Reason: ${reason} | Key: ${key?.substring(0, 12)}... | HWID: ${hwid?.substring(0, 12)}...`);
+    console.log(`🚨 Report: ${reason} | Key: ${key?.substring(0, 12)}...`);
+    logAccess(req, 'SECURITY_REPORT', false, { reason });
     
-    logAccess(req, 'SECURITY_REPORT', false, { reason, uptime });
-    
-    // Auto-blacklist on certain violations
-    const blacklistReasons = ['ENV:', 'DBG:', 'tamper', 'hook', 'inject', 'modified'];
-    if (reason && blacklistReasons.some(r => reason.toLowerCase().includes(r.toLowerCase()))) {
+    // Auto-blacklist on violations
+    if (reason && reason.includes('ENV:') || reason.includes('DBG:')) {
         db.addToBlacklist(clientIP, hwid, reason);
-        console.log(`🚫 Auto-blacklisted: ${clientIP} / ${hwid?.substring(0, 12)}...`);
     }
     
     res.json({ received: true });
 });
 
 // ============================================================
-// 👑 ADMIN API ROUTES
+// 👑 ADMIN ROUTES
 // ============================================================
 
 function adminAuth(req, res, next) {
@@ -1094,231 +851,73 @@ function adminAuth(req, res, next) {
     
     if (!adminKey || adminKey !== config.ADMIN_KEY) {
         logAccess(req, 'ADMIN_AUTH_FAILED', false);
-        return res.status(403).json({ success: false, error: "Invalid admin key" });
+        return res.status(403).json({ error: "Invalid admin key" });
     }
     
     next();
 }
 
-// --- Key Management ---
-
 app.post('/api/admin/keys/generate', adminAuth, (req, res) => {
-    const { tier = "free", expiryDays = null, maxHwid = 1, note = "" } = req.body;
+    const { tier = "free", expiryDays = null } = req.body;
     
     const prefix = tier.toUpperCase().substring(0, 4);
     const newKey = `${prefix}-${uuidv4().substring(0, 4).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}-${uuidv4().substring(0, 4).toUpperCase()}`;
     
-    db.createKey(newKey, { tier, expiryDays, maxHwid, note });
+    db.createKey(newKey, { tier, expiryDays });
+    logAccess(req, 'KEY_GENERATED', true, { key: newKey });
     
-    const keyData = db.getKey(newKey);
-    logAccess(req, 'KEY_GENERATED', true, { key: newKey, tier });
-    
-    res.json({ 
-        success: true, 
-        key: newKey, 
-        tier,
-        expiry: keyData.expiry ? new Date(keyData.expiry).toISOString() : "lifetime",
-        maxHwid 
-    });
+    res.json({ success: true, key: newKey, tier });
 });
 
 app.get('/api/admin/keys', adminAuth, (req, res) => {
-    const keys = db.getAllKeys();
-    res.json({ success: true, count: keys.length, keys });
-});
-
-app.get('/api/admin/keys/:key', adminAuth, (req, res) => {
-    const keyData = db.getKey(req.params.key);
-    if (!keyData) {
-        return res.status(404).json({ success: false, error: "Key not found" });
-    }
-    res.json({ success: true, key: req.params.key, ...keyData });
+    res.json({ success: true, keys: db.getAllKeys() });
 });
 
 app.delete('/api/admin/keys/:key', adminAuth, (req, res) => {
     const { key } = req.params;
-    if (!db.getKey(key)) {
-        return res.status(404).json({ success: false, error: "Key not found" });
+    if (db.deleteKey(key)) {
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: "Key not found" });
     }
-    db.deleteKey(key);
-    logAccess(req, 'KEY_DELETED', true, { key });
-    res.json({ success: true, message: `Key ${key} deleted` });
 });
 
 app.post('/api/admin/keys/:key/reset-hwid', adminAuth, (req, res) => {
     const { key } = req.params;
-    if (!db.getKey(key)) {
-        return res.status(404).json({ success: false, error: "Key not found" });
+    if (db.updateKey(key, { hwid: null })) {
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: "Key not found" });
     }
-    db.updateKey(key, { hwid: null });
-    logAccess(req, 'HWID_RESET', true, { key });
-    res.json({ success: true, message: `HWID reset for ${key}` });
 });
-
-// --- Logs ---
-
-app.get('/api/admin/logs', adminAuth, (req, res) => {
-    const { limit = 100, success, action, ip } = req.query;
-    const filter = {};
-    if (success !== undefined) filter.success = success === 'true';
-    if (action) filter.action = action;
-    if (ip) filter.ip = ip;
-    
-    const logs = db.getLogs(parseInt(limit), filter);
-    res.json({ success: true, count: logs.length, logs });
-});
-
-// --- Blacklist ---
-
-app.get('/api/admin/blacklist', adminAuth, (req, res) => {
-    res.json({ success: true, blacklist: db.getBlacklist() });
-});
-
-app.post('/api/admin/blacklist/add', adminAuth, (req, res) => {
-    const { ip, hwid, reason = "Manual" } = req.body;
-    if (!ip && !hwid) {
-        return res.status(400).json({ success: false, error: "Provide ip or hwid" });
-    }
-    db.addToBlacklist(ip || null, hwid || null, reason);
-    logAccess(req, 'BLACKLIST_ADD', true, { ip, hwid, reason });
-    res.json({ success: true, message: "Added to blacklist" });
-});
-
-app.post('/api/admin/blacklist/remove', adminAuth, (req, res) => {
-    const { ip, hwid } = req.body;
-    db.removeFromBlacklist(ip || null, hwid || null);
-    logAccess(req, 'BLACKLIST_REMOVE', true, { ip, hwid });
-    res.json({ success: true, message: "Removed from blacklist" });
-});
-
-// --- Admin Detection Management ---
-
-app.get('/api/admin/detection/list', adminAuth, (req, res) => {
-    res.json({ 
-        success: true,
-        enabled: config.SECURITY.ENABLE_ADMIN_DETECTION, 
-        userIds: config.ADMIN_DETECTION.USER_IDS, 
-        usernames: config.ADMIN_DETECTION.USERNAMES 
-    });
-});
-
-app.post('/api/admin/detection/update', adminAuth, (req, res) => {
-    const { userIds, usernames, enabled } = req.body;
-    
-    if (typeof enabled === 'boolean') {
-        config.SECURITY.ENABLE_ADMIN_DETECTION = enabled;
-    }
-    if (userIds && Array.isArray(userIds)) {
-        config.ADMIN_DETECTION.USER_IDS = userIds.map(id => String(id).trim()).filter(Boolean);
-    }
-    if (usernames && Array.isArray(usernames)) {
-        config.ADMIN_DETECTION.USERNAMES = usernames.map(n => String(n).trim().toLowerCase()).filter(Boolean);
-    }
-    
-    logAccess(req, 'DETECTION_UPDATED', true);
-    
-    res.json({ 
-        success: true, 
-        enabled: config.SECURITY.ENABLE_ADMIN_DETECTION,
-        userIds: config.ADMIN_DETECTION.USER_IDS, 
-        usernames: config.ADMIN_DETECTION.USERNAMES 
-    });
-});
-
-// --- Stats ---
 
 app.get('/api/admin/stats', adminAuth, (req, res) => {
-    const stats = db.getStats();
-    
-    res.json({ 
-        success: true, 
-        stats: { 
-            ...stats,
-            server: {
-                uptime: Math.floor(process.uptime()) + "s",
-                memory: Math.floor(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
-                nodeVersion: process.version
-            },
-            security: {
-                obfuscation: config.SECURITY.ENABLE_OBFUSCATION,
-                antiTamper: config.SECURITY.ENABLE_ANTI_TAMPER,
-                heartbeat: config.SECURITY.ENABLE_HEARTBEAT,
-                adminDetection: config.SECURITY.ENABLE_ADMIN_DETECTION,
-                adminUserIds: config.ADMIN_DETECTION.USER_IDS.length,
-                adminUsernames: config.ADMIN_DETECTION.USERNAMES.length
-            }
-        } 
-    });
-});
-
-// --- Cache Management ---
-
-app.post('/api/admin/cache/clear', adminAuth, (req, res) => {
-    scriptCache.flushAll();
-    logAccess(req, 'CACHE_CLEARED', true);
-    res.json({ success: true, message: "Script cache cleared" });
+    res.json({ success: true, stats: db.getStats() });
 });
 
 // ============================================================
-// 🚫 CATCH-ALL: Block unknown routes + Browser protection
+// 🚫 CATCH-ALL ROUTE
 // ============================================================
 
 app.use('*', (req, res) => {
     if (isBrowserRequest(req)) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
+        res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+    } else {
+        res.status(404).json({ error: "Not found" });
     }
-    res.status(404).json({ success: false, error: "Endpoint not found" });
-});
-
-// ============================================================
-// ❌ GLOBAL ERROR HANDLER
-// ============================================================
-
-app.use((err, req, res, next) => {
-    console.error('❌ Server Error:', err.message);
-    logAccess(req, 'SERVER_ERROR', false, { error: err.message });
-    
-    if (isBrowserRequest(req)) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(UNAUTHORIZED_HTML);
-    }
-    
-    res.status(500).json({ success: false, error: "Internal server error" });
 });
 
 // ============================================================
 // 🚀 START SERVER
 // ============================================================
 
-const PORT = config.PORT;
-
-app.listen(PORT, () => {
-    console.log('');
-    console.log('╔══════════════════════════════════════════════════════════════════╗');
-    console.log('║          🛡️  ROBLOX SCRIPT PROTECTOR v1.3.0 - STARTED            ║');
-    console.log('╠══════════════════════════════════════════════════════════════════╣');
-    console.log(`║  🌐 Port: ${PORT}                                                     ║`);
-    console.log(`║  📅 ${new Date().toISOString()}                            ║`);
-    console.log('╠══════════════════════════════════════════════════════════════════╣');
-    console.log(`║  🔒 Obfuscation:       ${config.SECURITY.ENABLE_OBFUSCATION ? '✅ ON ' : '❌ OFF'}                                 ║`);
-    console.log(`║  🛡️  Anti-Tamper:       ${config.SECURITY.ENABLE_ANTI_TAMPER ? '✅ ON ' : '❌ OFF'}                                 ║`);
-    console.log(`║  💓 Heartbeat:         ${config.SECURITY.ENABLE_HEARTBEAT ? '✅ ON ' : '❌ OFF'} (30s interval)                    ║`);
-    console.log(`║  👑 Admin Detection:   ${config.SECURITY.ENABLE_ADMIN_DETECTION ? '✅ ON ' : '❌ OFF'} (10s scan)                      ║`);
-    console.log(`║  🌐 Browser Block:     ✅ ON                                      ║`);
-    console.log('╠══════════════════════════════════════════════════════════════════╣');
-    console.log('║  📱 Supported Executors:                                         ║');
-    console.log('║     PC: Synapse, KRNL, Fluxus, Script-Ware, Evon, Solara, etc.   ║');
-    console.log('║     Mobile: Delta, Arceus X, Hydrogen, Codex, Vegax, etc.        ║');
-    console.log('╠══════════════════════════════════════════════════════════════════╣');
-    console.log('║  📍 Endpoints:                                                   ║');
-    console.log('║     GET  /api/script?key=XXX&hwid=YYY                            ║');
-    console.log('║     POST /api/validate                                           ║');
-    console.log('║     POST /api/heartbeat                                          ║');
-    console.log('║     POST /api/admin-check                                        ║');
-    console.log('║     POST /api/admin/* (x-admin-key required)                     ║');
-    console.log('╚══════════════════════════════════════════════════════════════════╝');
-    console.log('');
+app.listen(config.PORT, () => {
+    console.log('╔════════════════════════════════════════════════════════╗');
+    console.log('║     🛡️  ROBLOX SCRIPT PROTECTOR v1.3.1 - STARTED       ║');
+    console.log('╠════════════════════════════════════════════════════════╣');
+    console.log(`║  Port: ${config.PORT}                                          ║`);
+    console.log(`║  URL: https://toingdc-h4f9.onrender.com                ║`);
+    console.log('╚════════════════════════════════════════════════════════╝');
 });
 
 module.exports = app;
