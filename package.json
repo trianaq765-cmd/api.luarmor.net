@@ -1,13 +1,21 @@
 {
   "name": "roblox-script-protector",
   "version": "1.0.0",
-  "description": "Backend server untuk melindungi Roblox loadstring",
-  "main": "index.js",
+  "description": "Backend server untuk melindungi Roblox loadstring dengan fitur keamanan lengkap",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
   },
-  "keywords": ["roblox", "script", "protector", "loadstring"],
+  "keywords": [
+    "roblox",
+    "script",
+    "protector",
+    "loadstring",
+    "security",
+    "hwid",
+    "key-system"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
@@ -18,7 +26,8 @@
     "express-rate-limit": "^7.1.5",
     "dotenv": "^16.3.1",
     "uuid": "^9.0.1",
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "node-cache": "^5.1.2"
   },
   "engines": {
     "node": ">=18.0.0"
