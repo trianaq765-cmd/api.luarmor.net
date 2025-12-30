@@ -1,57 +1,34 @@
 // ============================================================
-// 🔧 CONFIGURATION FILE
+// ⚙️ CONFIG - src/config.js (FIXED)
 // ============================================================
 
-require('dotenv').config();
+// Untuk Render, tidak perlu dotenv karena env sudah di-inject
+// Tapi tetap support lokal development
+try {
+    require('dotenv').config();
+} catch (e) {
+    // Ignore jika dotenv tidak ada
+}
 
-const config = {
-    // Server
+module.exports = {
     PORT: process.env.PORT || 3000,
     NODE_ENV: process.env.NODE_ENV || 'development',
     
-    // Security Keys
-    SECRET_KEY: process.env.SECRET_KEY || 'default-secret-key-change-in-production',
-    ADMIN_KEY: process.env.ADMIN_KEY || 'default-admin-key-change-in-production',
+    // 🔐 Dari environment variables
+    SCRIPT_SOURCE_URL: process.env.SCRIPT_SOURCE_URL,
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || 'default-encryption-key-32chars!!',
+    SIGNING_SECRET: process.env.SIGNING_SECRET || 'default-signing-secret-here!!!!',
+    ADMIN_KEY: process.env.ADMIN_KEY || 'default-admin-key',
     
-    // Original Script
-    ORIGINAL_SCRIPT_URL: process.env.ORIGINAL_SCRIPT_URL || '',
-    
-    // Rate Limiting
+    // Rate Limit
     RATE_LIMIT: {
-        WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 60000,
-        MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 10
+        WINDOW_MS: 60000,
+        MAX_REQUESTS: 30
     },
     
-    // Security Features
-    SECURITY: {
-        ENABLE_OBFUSCATION: process.env.ENABLE_OBFUSCATION === 'true',
-        ENABLE_ANTI_TAMPER: process.env.ENABLE_ANTI_TAMPER === 'true',
-        ENABLE_HEARTBEAT: process.env.ENABLE_HEARTBEAT === 'true',
-        MAX_FAILED_ATTEMPTS: parseInt(process.env.MAX_FAILED_ATTEMPTS) || 5
-    },
+    // Cache TTL (5 menit)
+    CACHE_TTL: 5 * 60 * 1000,
     
-    // Cache
-    CACHE: {
-        SCRIPT_TTL: parseInt(process.env.SCRIPT_CACHE_TTL) || 300
-    },
-    
-    // Server URL (untuk heartbeat)
-    getServerURL: function() {
-        if (process.env.RENDER_EXTERNAL_URL) {
-            return process.env.RENDER_EXTERNAL_URL;
-        }
-        return `http://localhost:${this.PORT}`;
-    }
+    // Token expiry (30 detik)
+    TOKEN_EXPIRY: 30 * 1000
 };
-
-// Validation
-if (config.NODE_ENV === 'production') {
-    if (config.SECRET_KEY.includes('default') || config.SECRET_KEY.includes('change')) {
-        console.warn('⚠️  WARNING: Using default SECRET_KEY in production!');
-    }
-    if (config.ADMIN_KEY.includes('default') || config.ADMIN_KEY.includes('change')) {
-        console.warn('⚠️  WARNING: Using default ADMIN_KEY in production!');
-    }
-}
-
-module.exports = config;
