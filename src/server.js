@@ -260,16 +260,6 @@ app.get('/script', securityCheck, async (req, res) => {
         }
 
         let protectedScript;
-        switch(protectionLevel) {
-            case 'advanced':
-                protectedScript = cryptoLayer.createAdvancedPayload(script);
-                break;
-            case 'minimal':
-                protectedScript = cryptoLayer.lightObfuscate(script);
-                break;
-            default:
-                protectedScript = cryptoLayer.createProtectedPayload(script);
-        }
 
         logAccess(req, 'SCRIPT_SERVED', true, { 
             size: protectedScript.length, cached: cacheHit, protection: protectionLevel 
