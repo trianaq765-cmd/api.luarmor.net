@@ -1,18 +1,24 @@
 // ============================================================
-// ⚙️ CONFIG - src/config.js
+// ⚙️ CONFIG - src/config.js (FIXED)
 // ============================================================
 
-require('dotenv').config({ path: '../.env' }); // .env di luar src
+// Untuk Render, tidak perlu dotenv karena env sudah di-inject
+// Tapi tetap support lokal development
+try {
+    require('dotenv').config();
+} catch (e) {
+    // Ignore jika dotenv tidak ada
+}
 
 module.exports = {
     PORT: process.env.PORT || 3000,
     NODE_ENV: process.env.NODE_ENV || 'development',
     
-    // 🔐 Tersembunyi di environment
+    // 🔐 Dari environment variables
     SCRIPT_SOURCE_URL: process.env.SCRIPT_SOURCE_URL,
-    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || 'default-key-change-this-now!!!!',
-    SIGNING_SECRET: process.env.SIGNING_SECRET || 'default-secret-change-this!!!',
-    ADMIN_KEY: process.env.ADMIN_KEY || 'change-this-admin-key',
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || 'default-encryption-key-32chars!!',
+    SIGNING_SECRET: process.env.SIGNING_SECRET || 'default-signing-secret-here!!!!',
+    ADMIN_KEY: process.env.ADMIN_KEY || 'default-admin-key',
     
     // Rate Limit
     RATE_LIMIT: {
