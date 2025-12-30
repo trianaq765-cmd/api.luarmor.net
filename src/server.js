@@ -1,8 +1,6 @@
 // ============================================================
-// 🛡️ PREMIUM LOADER v2.1.0 - src/server.js
+// 🛡️ PREMIUM LOADER v2.2.0 - SIMPLE & CLEAN
 // ============================================================
-
-require('dotenv').config();
 
 const express = require('express');
 const axios = require('axios');
@@ -10,12 +8,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 
 const config = require('./config');
 const { db, scriptCache } = require('./database');
-const cryptoLayer = require('./crypto-layer');
-const validator = require('./validator');
 
 const app = express();
 
@@ -93,63 +88,95 @@ const UNAUTHORIZED_HTML = `<!DOCTYPE html>
 // 🔧 MIDDLEWARE
 // ============================================================
 
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(cors({ 
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        callback(new Error('Not allowed'));
-    },
-    methods: ['GET', 'POST', 'DELETE', 'PUT'],
-    allowedHeaders: ['Content-Type', 'x-admin-key', 'x-session', 'x-protection', 'Authorization']
+app.use(helmet({ 
+    contentSecurityPolicy: false, 
+    crossOriginEmbedderPolicy: false 
 }));
+
+app.use(cors({ 
+    origin: '*', 
+    methods: ['GET', 'POST', 'DELETE', 'PUT'], 
+    allowedHeaders: ['Content-Type', 'x-admin-key', 'Authorization'] 
+}));
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
 
 // Rate Limiting
-const scriptLimiter = rateLimit({
-    windowMs: 60000,
-    max: 20,
+const limiter = rateLimit({
+    windowMs: config.RATE_LIMIT.WINDOW_MS,
+    max: config.RATE_LIMIT.MAX_REQUESTS,
+    message: { success: false, error: "Too many requests" },
     keyGenerator: (req) => getClientIP(req),
     handler: (req, res) => {
         logAccess(req, 'RATE_LIMITED', false);
-        validator.trackSuspicious(getClientIP(req), 'RATE_LIMITED');
-        res.status(429).json({ error: "Rate limit exceeded" });
+        res.status(429).json({ success: false, error: "Rate limit exceeded" });
     }
 });
 
-const adminLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    keyGenerator: (req) => getClientIP(req)
-});
-
-app.use('/api/', scriptLimiter);
+app.use('/api/', limiter);
 
 // ============================================================
-// 🔧 HELPERS
+// 🔧 HELPER FUNCTIONS
 // ============================================================
 
 function getClientIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
            req.headers['x-real-ip'] || 
            req.connection?.remoteAddress || 
-           req.ip || 'unknown';
+           req.ip || 
+           'unknown';
 }
 
 function logAccess(req, action, success, details = {}) {
     const log = { 
         ip: getClientIP(req), 
         userAgent: req.headers['user-agent'] || 'unknown', 
-        action, success, 
+        action, 
+        success, 
         method: req.method, 
-        path: req.path,
-        timestamp: new Date().toISOString(),
+        path: req.path, 
         ...details 
     };
     db.addLog(log);
-    console.log(`[${log.timestamp}] ${success ? '✅' : '❌'} ${action} | IP: ${log.ip}`);
+    console.log(`[${new Date().toISOString()}] ${success ? '✅' : '❌'} ${action} | IP: ${log.ip}`);
     return log;
+}
+
+function isBrowserRequest(req) {
+    const accept = req.headers['accept'] || '';
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    
+    // Executor whitelist - langsung izinkan
+    const executorKeywords = [
+        'roblox', 'synapse', 'krnl', 'fluxus', 'delta', 
+        'electron', 'script-ware', 'sentinel', 'coco', 
+        'oxygen', 'evon', 'arceus', 'hydrogen', 'vegax',
+        'trigon', 'comet', 'jjsploit', 'wearedevs', 
+        'executor', 'exploit', 'wininet'
+    ];
+    
+    if (executorKeywords.some(keyword => userAgent.includes(keyword))) {
+        return false; // Ini executor, bukan browser
+    }
+    
+    // Cek apakah browser
+    if (accept.includes('text/html')) {
+        const hasBrowserUA = userAgent.includes('mozilla') || 
+                             userAgent.includes('chrome') || 
+                             userAgent.includes('safari') ||
+                             userAgent.includes('firefox') ||
+                             userAgent.includes('edge');
+        
+        const hasAcceptLanguage = !!req.headers['accept-language'];
+        
+        if (hasBrowserUA && hasAcceptLanguage) {
+            return true; // Ini browser
+        }
+    }
+    
+    return false; // Default: bukan browser (izinkan)
 }
 
 function secureCompare(a, b) {
@@ -157,126 +184,76 @@ function secureCompare(a, b) {
     if (a.length !== b.length) return false;
     try {
         return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-    } catch { return false; }
+    } catch {
+        return false;
+    }
 }
 
 // ============================================================
-// 🛡️ SECURITY MIDDLEWARE
+// 🚀 MAIN ENDPOINT - /script
 // ============================================================
 
-function securityCheck(req, res, next) {
-    const ip = getClientIP(req);
-    
-    if (validator.isBlocked(ip)) {
-        logAccess(req, 'IP_BLOCKED', false);
-        return res.status(403).send('');
-    }
-    
-    const check = validator.isValidExecutor(req);
-    if (!check.valid) {
-        validator.trackSuspicious(ip, check.reason);
-        logAccess(req, check.reason, false);
+app.get('/script', async (req, res) => {
+    // Block browsers
+    if (isBrowserRequest(req)) {
+        logAccess(req, 'BROWSER_BLOCKED', false);
         return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
     }
-    
-    req.executorType = check.type;
-    next();
-}
-
-// ============================================================
-// 🎫 SESSION SYSTEM
-// ============================================================
-
-const activeSessions = new Map();
-
-function createSession(ip, userAgent) {
-    const sessionId = uuidv4();
-    activeSessions.set(sessionId, {
-        id: sessionId, ip, userAgent,
-        created: Date.now(), uses: 0, maxUses: 10
-    });
-    setTimeout(() => activeSessions.delete(sessionId), 15 * 60 * 1000);
-    return sessionId;
-}
-
-function validateSession(sessionId, ip) {
-    const session = activeSessions.get(sessionId);
-    if (!session) return { valid: false, reason: 'SESSION_NOT_FOUND' };
-    if (session.ip !== ip) return { valid: false, reason: 'IP_MISMATCH' };
-    if (session.uses >= session.maxUses) return { valid: false, reason: 'SESSION_EXHAUSTED' };
-    if (Date.now() - session.created > 15 * 60 * 1000) return { valid: false, reason: 'SESSION_EXPIRED' };
-    session.uses++;
-    return { valid: true, session };
-}
-
-// ============================================================
-// 🎫 INIT ENDPOINT
-// ============================================================
-
-app.get('/init', securityCheck, (req, res) => {
-    const ip = getClientIP(req);
-    const sessionId = createSession(ip, req.headers['user-agent'] || '');
-    const token = cryptoLayer.generateToken();
-    logAccess(req, 'SESSION_CREATED', true, { sessionId: sessionId.substring(0, 8) });
-    res.type('text/plain').send(`return "${sessionId}","${token}"`);
-});
-
-// ============================================================
-// 🚀 SCRIPT ENDPOINT
-// ============================================================
-
-app.get('/script', securityCheck, async (req, res) => {
-    const ip = getClientIP(req);
-    const sessionId = req.headers['x-session'];
-    const protectionLevel = req.headers['x-protection'] || 'standard';
 
     try {
-        if (sessionId) {
-            const check = validateSession(sessionId, ip);
-            if (!check.valid) logAccess(req, check.reason, false);
-        }
+        console.log(`📥 [SCRIPT] Request from: ${getClientIP(req)}`);
 
-        console.log(`📥 [SCRIPT] IP: ${ip} | Protection: ${protectionLevel}`);
-
+        // Cek cache dulu
         let script = scriptCache.get('main_script');
-        let cacheHit = true;
         
         if (!script) {
-            cacheHit = false;
-            if (!config.SCRIPT_SOURCE_URL) throw new Error('Source not configured');
+            // Cek apakah URL sudah di-set
+            if (!config.SCRIPT_SOURCE_URL) {
+                console.error('❌ SCRIPT_SOURCE_URL not configured!');
+                throw new Error('Script source not configured');
+            }
             
-            console.log(`🔄 Fetching...`);
+            console.log(`🔄 Fetching from source...`);
+            
             const response = await axios.get(config.SCRIPT_SOURCE_URL, {
                 timeout: 15000,
-                headers: { 'User-Agent': 'Roblox/WinInet', 'Accept': '*/*' },
-                maxRedirects: 2
+                headers: {
+                    'User-Agent': 'Roblox/WinInet',
+                    'Accept': '*/*'
+                }
             });
 
             script = response.data;
-            if (typeof script !== 'string' || script.length < 10) throw new Error('Invalid response');
 
+            if (typeof script !== 'string' || script.length < 10) {
+                throw new Error('Invalid script response');
+            }
+
+            // Cache script
             scriptCache.set('main_script', script);
-            console.log(`✅ Cached (${script.length} bytes)`);
+            console.log(`✅ Script cached (${script.length} bytes)`);
+        } else {
+            console.log(`📦 Using cached script`);
         }
 
-        let protectedScript;
-
-        logAccess(req, 'SCRIPT_SERVED', true, { 
-            size: protectedScript.length, cached: cacheHit, protection: protectionLevel 
-        });
+        logAccess(req, 'SCRIPT_SERVED', true, { size: script.length });
         
-        res.type('text/plain').send(protectedScript);
+        // Langsung kirim script tanpa wrapper
+        res.type('text/plain').send(script);
 
     } catch (error) {
         console.error('❌ Error:', error.message);
-        logAccess(req, 'SCRIPT_ERROR', false);
-        res.status(500).type('text/plain').send(`
+        logAccess(req, 'SCRIPT_ERROR', false, { error: error.message });
+        
+        const errorScript = `
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "❌ Error",
-    Text = "Failed to load. Try again.",
+    Text = "Failed to load script. Try again.",
     Duration = 5
 })
-`);
+warn("[LOADER] Error: Connection failed")
+`;
+        res.status(500).type('text/plain').send(errorScript);
     }
 });
 
@@ -285,15 +262,28 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
 // ============================================================
 
 app.get('/', (req, res) => {
-    const check = validator.isValidExecutor(req);
-    if (!check.valid) return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
-    res.json({ status: "online", name: "Premium Loader", version: "2.1.0" });
+    if (isBrowserRequest(req)) {
+        return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+    }
+    
+    res.json({
+        status: "online",
+        name: "Premium Loader",
+        version: "2.2.0"
+    });
 });
 
 app.get('/api/health', (req, res) => {
-    const check = validator.isValidExecutor(req);
-    if (!check.valid) return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
-    res.json({ status: "healthy", uptime: Math.floor(process.uptime()) + "s" });
+    if (isBrowserRequest(req)) {
+        return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+    }
+    
+    res.json({ 
+        status: "healthy", 
+        timestamp: new Date().toISOString(), 
+        uptime: Math.floor(process.uptime()) + "s",
+        cached: scriptCache.has('main_script')
+    });
 });
 
 // ============================================================
@@ -301,39 +291,49 @@ app.get('/api/health', (req, res) => {
 // ============================================================
 
 function adminAuth(req, res, next) {
-    const key = req.headers['x-admin-key'] || req.body?.adminKey;
-    if (!key || !secureCompare(key, config.ADMIN_KEY)) {
+    const adminKey = req.headers['x-admin-key'] || req.body?.adminKey;
+    
+    if (!adminKey || !secureCompare(adminKey, config.ADMIN_KEY)) {
         logAccess(req, 'ADMIN_AUTH_FAILED', false);
-        validator.trackSuspicious(getClientIP(req), 'ADMIN_BRUTEFORCE');
         return res.status(403).json({ error: "Invalid admin key" });
     }
+    
     next();
 }
 
-app.post('/api/admin/cache/clear', adminLimiter, adminAuth, (req, res) => {
-    scriptCache.clear();
+// Clear cache
+app.post('/api/admin/cache/clear', adminAuth, (req, res) => {
+    scriptCache.flushAll();
+    console.log('🗑️ Cache cleared by admin');
     logAccess(req, 'CACHE_CLEARED', true);
     res.json({ success: true, message: "Cache cleared" });
 });
 
-app.get('/api/admin/stats', adminLimiter, adminAuth, (req, res) => {
+// Get stats
+app.get('/api/admin/stats', adminAuth, (req, res) => {
     res.json({ 
         success: true, 
         stats: db.getStats(),
-        security: validator.getStats(),
-        sessions: activeSessions.size,
-        cached: scriptCache.has('main_script')
+        cacheStatus: scriptCache.has('main_script') ? 'cached' : 'empty',
+        cacheKeys: scriptCache.keys()
     });
 });
 
-app.get('/api/admin/logs', adminLimiter, adminAuth, (req, res) => {
+// Get logs
+app.get('/api/admin/logs', adminAuth, (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     res.json({ success: true, logs: db.getLogs(limit) });
 });
 
-app.post('/api/admin/refresh', adminLimiter, adminAuth, async (req, res) => {
+// Force refresh script
+app.post('/api/admin/refresh', adminAuth, async (req, res) => {
     try {
-        scriptCache.clear();
+        scriptCache.flushAll();
+        
+        if (!config.SCRIPT_SOURCE_URL) {
+            throw new Error('SCRIPT_SOURCE_URL not configured');
+        }
+        
         const response = await axios.get(config.SCRIPT_SOURCE_URL, {
             timeout: 15000,
             headers: { 'User-Agent': 'Roblox/WinInet' }
@@ -341,20 +341,15 @@ app.post('/api/admin/refresh', adminLimiter, adminAuth, async (req, res) => {
         
         if (typeof response.data === 'string' && response.data.length > 10) {
             scriptCache.set('main_script', response.data);
-            logAccess(req, 'SCRIPT_REFRESHED', true);
+            logAccess(req, 'SCRIPT_REFRESHED', true, { size: response.data.length });
             res.json({ success: true, size: response.data.length });
-        } else throw new Error('Invalid');
-    } catch {
-        res.status(500).json({ success: false, error: 'Refresh failed' });
+        } else {
+            throw new Error('Invalid response');
+        }
+    } catch (error) {
+        logAccess(req, 'REFRESH_FAILED', false);
+        res.status(500).json({ success: false, error: error.message });
     }
-});
-
-app.post('/api/admin/unblock', adminLimiter, adminAuth, (req, res) => {
-    const { ip } = req.body;
-    if (ip) {
-        validator.suspiciousIPs.delete(ip);
-        res.json({ success: true, message: `IP ${ip} unblocked` });
-    } else res.status(400).json({ error: 'IP required' });
 });
 
 // ============================================================
@@ -362,23 +357,31 @@ app.post('/api/admin/unblock', adminLimiter, adminAuth, (req, res) => {
 // ============================================================
 
 app.use('*', (req, res) => {
-    const check = validator.isValidExecutor(req);
-    if (!check.valid) return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+    if (isBrowserRequest(req)) {
+        return res.status(403).type('text/html').send(UNAUTHORIZED_HTML);
+    }
+    
     res.status(404).json({ error: "Not found" });
 });
 
 // ============================================================
-// 🚀 START
+// 🚀 START SERVER
 // ============================================================
 
 app.listen(config.PORT, () => {
     console.log('╔══════════════════════════════════════════════════════════╗');
-    console.log('║      🛡️  PREMIUM LOADER v2.1.0 - SECURE MODE             ║');
+    console.log('║      🛡️  PREMIUM LOADER v2.2.0 - SIMPLE & CLEAN         ║');
     console.log('╠══════════════════════════════════════════════════════════╣');
     console.log(`║  Port: ${config.PORT}                                            ║`);
-    console.log('║  ✅ Script Source: HIDDEN                                ║');
-    console.log('║  ✅ Protection: ACTIVE                                   ║');
-    console.log('║  ✅ Executor Detection: IMPROVED                         ║');
+    console.log('║                                                          ║');
+    console.log('║  ✅ Script Source: ' + (config.SCRIPT_SOURCE_URL ? 'CONFIGURED' : '❌ NOT SET') + '                       ║');
+    console.log('║  ✅ Admin Key: ' + (config.ADMIN_KEY ? 'CONFIGURED' : '❌ NOT SET') + '                           ║');
+    console.log('║                                                          ║');
+    console.log('║  Endpoints:                                              ║');
+    console.log('║  • GET /script - Main script                             ║');
+    console.log('║  • GET /api/health - Health check                        ║');
+    console.log('║  • POST /api/admin/cache/clear - Clear cache             ║');
+    console.log('║  • POST /api/admin/refresh - Refresh script              ║');
     console.log('╚══════════════════════════════════════════════════════════╝');
 });
 
